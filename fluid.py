@@ -23,7 +23,7 @@ class Fluid:
         self.diff = 0.0000  # Diffusion
         self.visc = 0.0000  # viscosity
 
-        self.s = np.full((self.size, self.size), 0, dtype=float)        # Previous density
+        self.s = np.full((self.size, self.size), 0, dtype=float)  # Previous density
         self.density = np.full((self.size, self.size), 0, dtype=float)  # Current density
 
         # array of 2d vectors, [x, y]
@@ -164,66 +164,100 @@ class Fluid:
 if __name__ == "__main__":
     try:
         import matplotlib.pyplot as plt
+        import pandas as pd
         from matplotlib import animation
 
         inst = Fluid()
         posy = 20
-        goDown=True
-        posx=20
-        goRight=20  
-        def move_sideY():
-            global goDown, posy
-            if goDown:
-                posy+=1
-                if posy>59:
-                    goDown=False
-            if goDown==False:
-                posy-=1
-                if posy<1:
-                    goDown=True
-        def move_sideX():
-            global goRight, posx
-            if goRight:
-                posx+=1
-                if posx>59:
-                    goRight=False
-            if goRight==False:
-                posx-=1
-                if posx<1:
-                    goRight=True
+        goDown = True
+        posx = 20
+        goRight = 20
+        densityDF = pd.read_excel('fluid.xlsx', 'Density')
+        velocityDF = pd.read_excel('fluid.xlsx', 'Velocity')
+
+
+        
+
+
+        def move_sideXPD(df, index, goRightPD, posx):
+
+            if goRightPD == 1:
+                posx += 1
+                if posx > 59:
+                    goRightPD = 0
+                    df.at[index, 'goRight'] = 0
+            if goRightPD == 0:
+                posx -= 1
+                if posx < 1:
+                    goRightPD = 1
+                    df.at[index, 'goRight'] = 1
+            df.at[index, 'PosX'] = posx
+            return posx
+        def move_sideYPD(df, index, goDownPD, posy):
+
+            if goDownPD == 1:
+                posy += 1
+                if posy > 59:
+                    goDownPD = 0
+                    df.at[index, 'goDown'] = 0
+            if goDownPD == 0:
+                posy -= 1
+                if posy < 1:
+                    goDownPD = 1
+                    df.at[index, 'goDown'] = 1
+            df.at[index, 'PosY'] = posy
+            return posy
 
 
         def update_im(i):
             # We add new density creators in here
             global posy
+            for index, row in densityDF.iterrows():
+                inst.density[row['PosY_Density']:row['PosY_Density'] + 3,
+                row['PosX_Density']:row['PosX_Density'] + 3] += 100
 
-            inst.density[14:17, 14:17] += 100  # add density into a 3*3 square
-            inst.density[30:33, 30:33] += 100  # add density into a 3*3 square
-            inst.density[10:13, 40:43] = 100
+            for index, row in velocityDF.iterrows():
+                posxPD = row['PosX']
+                posyPD = row['PosY']
+                dirX = row['DirX']
+                dirY = row['DirY']
+                if row['MoveX'] == 1:
+                    posxPD = move_sideXPD(velocityDF, index, row['goRight'], posxPD)
+                if row['MoveY'] == 1:
+                    posyPD = move_sideYPD(velocityDF, index, row['goDown'], posyPD)
+                inst.velo[posyPD,posxPD]=[dirY,dirX]
+                inst.step()
+
+
+            #inst.density[14:17, 14:17] += 100  # add density into a 3*3 square
+            #inst.density[30:33, 30:33] += 100  # add density into a 3*3 square
+            #inst.density[10:14, 40:43] = 100
             # We add velocity vector values in here
-            move_sideY()
-            inst.velo[posy, 20] = [-2, -2]
-            inst.step()
-            inst.velo[30, 30] = [-2, 2]
-            inst.step()
+            #move_sideY()
+            #inst.velo[posy, 20] = [-2, -2]
+            #inst.step()
+            #inst.velo[30, 30] = [-2, 2]
+            #inst.step()
             im.set_array(inst.density)
             q.set_UVC(inst.velo[:, :, 1], inst.velo[:, :, 0])
             # print(f"Density sum: {inst.density.sum()}")
             im.autoscale()
 
+
         fig = plt.figure()
 
         # plot density
-        im = plt.imshow(inst.density, vmin=99, vmax=100, interpolation='bilinear')
+        im = plt.imshow(inst.density, vmax=100, cmap='autumn', interpolation='bilinear')
 
         # plot vector field
         q = plt.quiver(inst.velo[:, :, 1], inst.velo[:, :, 0], scale=10, angles='xy')
         anim = animation.FuncAnimation(fig, update_im, interval=0)
-        #anim.save("movie.mp4", fps=30, extra_args=['-vcodec', 'libx264'])
+        # anim.save("movie.mp4", fps=30, extra_args=['-vcodec', 'libx264'])
         plt.show()
 
     except ImportError:
         import imageio
+
         frames = 30
 
         flu = Fluid()
