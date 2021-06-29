@@ -174,9 +174,9 @@ if __name__ == "__main__":
         goRight = 20
         densityDF = pd.read_excel('fluid.xlsx', 'Density')
         velocityDF = pd.read_excel('fluid.xlsx', 'Velocity')
+        objectDF = pd.read_excel('fluid.xlsx', 'Object')
 
 
-        
 
 
         def move_sideXPD(df, index, goRightPD, posx):
@@ -211,10 +211,11 @@ if __name__ == "__main__":
 
         def update_im(i):
             # We add new density creators in here
-            global posy
+
             for index, row in densityDF.iterrows():
-                inst.density[row['PosY_Density']:row['PosY_Density'] + 3,
-                row['PosX_Density']:row['PosX_Density'] + 3] += 100
+                dist = row['Size']
+                inst.density[row['PosY_Density']:row['PosY_Density'] + dist,
+                row['PosX_Density']:row['PosX_Density'] + dist] += 100
 
             for index, row in velocityDF.iterrows():
                 posxPD = row['PosX']
@@ -227,6 +228,12 @@ if __name__ == "__main__":
                     posyPD = move_sideYPD(velocityDF, index, row['goDown'], posyPD)
                 inst.velo[posyPD,posxPD]=[dirY,dirX]
                 inst.step()
+            for index, row in objectDF.iterrows():
+                posxPD = row['PosX']
+                posyPD = row['PosY']
+                dist = row['Size']
+                inst.velo[posyPD:posyPD+dist,posxPD:posxPD+dist]=0
+
 
 
             #inst.density[14:17, 14:17] += 100  # add density into a 3*3 square
@@ -252,7 +259,7 @@ if __name__ == "__main__":
         # plot vector field
         q = plt.quiver(inst.velo[:, :, 1], inst.velo[:, :, 0], scale=10, angles='xy')
         anim = animation.FuncAnimation(fig, update_im, interval=0)
-        # anim.save("movie.mp4", fps=30, extra_args=['-vcodec', 'libx264'])
+        #anim.save("vid1.mp4", fps=30)
         plt.show()
 
     except ImportError:
