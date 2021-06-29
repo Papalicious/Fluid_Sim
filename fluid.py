@@ -175,6 +175,7 @@ if __name__ == "__main__":
         densityDF = pd.read_excel('fluid.xlsx', 'Density')
         velocityDF = pd.read_excel('fluid.xlsx', 'Velocity')
         objectDF = pd.read_excel('fluid.xlsx', 'Object')
+        colorDF = pd.read_excel('fluid.xlsx', 'Color')
 
 
 
@@ -250,11 +251,13 @@ if __name__ == "__main__":
             # print(f"Density sum: {inst.density.sum()}")
             im.autoscale()
 
-
+        color=''
+        for index, row in colorDF.iterrows():
+            color = row['ColorSchema']
         fig = plt.figure()
 
         # plot density
-        im = plt.imshow(inst.density, vmax=100, cmap='autumn', interpolation='bilinear')
+        im = plt.imshow(inst.density, vmax=100, cmap=color, interpolation='bilinear')
 
         # plot vector field
         q = plt.quiver(inst.velo[:, :, 1], inst.velo[:, :, 0], scale=10, angles='xy')
